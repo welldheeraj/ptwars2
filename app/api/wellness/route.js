@@ -1,81 +1,73 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 
-const genAI = new GoogleGenerativeAI(
-  process.env.GEMINI_API_KEY
-);
-console.log(
-    "KEY EXISTS:",
-    !!process.env.GEMINI_API_KEY
-  );
+const openai = new OpenAI({
+  apiKey:
+    process.env.OPENAI_API_KEY,
+});
 
-  console.log(
-    "KEY PREVIEW:",
-    process.env.GEMINI_API_KEY?.slice(
-      0,
-      10
-    )
-  );
-// OFFLINE FALLBACK ENGINE
+// OFFLINE FALLBACK
 function offlineSupport(body) {
-  const stress = Number(body.stress);
-  const sleep = Number(body.sleep);
-  const study = Number(body.studyHours);
+  const stress = Number(
+    body.stress
+  );
+  const sleep = Number(
+    body.sleep
+  );
+  const study = Number(
+    body.studyHours
+  );
 
   let tip = "";
   let motivation = "";
   let warning = "";
 
-  // Stress Analysis
   if (stress >= 8) {
     tip =
-      "High stress detected. Reduce pressure by taking 15-minute breaks and avoiding overthinking.";
+      "High stress detected. Take short breaks and avoid overthinking.";
 
     warning =
       "High burnout risk detected.";
   } else if (stress >= 5) {
     tip =
-      "Moderate stress detected. Focus on revision instead of learning too many new topics.";
-
-    warning =
-      "Manage your stress with breathing exercises.";
+      "Moderate stress detected. Focus on revision instead of overstudying.";
   } else {
     tip =
-      "You are handling pressure well. Keep your routine consistent.";
+      "You are handling pressure well.";
   }
 
-  // Sleep Logic
   if (sleep < 5) {
     warning +=
-      " Sleep deficit detected. Your mental focus may decrease.";
+      " Sleep deficit detected.";
   }
 
-  // Overstudy Logic
   if (study > 10) {
     warning +=
-      " Overstudying detected. Productivity may drop.";
+      " Overstudying detected.";
   }
 
-  // Exam Specific Motivation
-  const motivationMap = {
-    NEET:
-      "Consistency matters more than perfection. Focus on concepts.",
-    JEE:
-      "Every mock test is progress, not failure.",
-    UPSC:
-      "Small disciplined efforts create big success.",
-    CAT:
-      "Accuracy matters more than speed.",
-    GATE:
-      "Strong fundamentals beat shortcuts.",
-    CUET:
-      "Stay consistent and revise regularly.",
-    Boards:
-      "Revision and confidence will help you succeed.",
-  };
+  const motivationMap =
+    {
+      NEET:
+        "Consistency matters more than perfection.",
+      JEE:
+        "Every mock test is progress.",
+      UPSC:
+        "Discipline wins long journeys.",
+      CAT:
+        "Accuracy beats speed.",
+      GATE:
+        "Strong basics matter.",
+      CUET:
+        "Stay consistent daily.",
+      Boards:
+        "Revision builds confidence.",
+    };
 
   motivation =
-    motivationMap[body.exam] ||
-    "Believe in yourself and stay consistent.";
+    motivationMap[
+      body.exam
+    ] ||
+    "Believe in yourself.";
 
   return {
     tip,
@@ -87,120 +79,94 @@ function offlineSupport(body) {
 
 export async function POST(req) {
   try {
-    const body = await req.json();
+    const body =
+      await req.json();
 
-    console.log("BODY:", body);
-
-    // VALIDATION
-    if (
-      !body.exam ||
-      !body.mood ||
-      !body.stress ||
-      !body.sleep ||
-      !body.studyHours
-    ) {
-      return Response.json(
-        {
-          error:
-            "Missing required fields",
-        },
-        { status: 400 }
-      );
-    }
-
-    // TRY GEMINI FIRST
     try {
       if (
-        process.env.GEMINI_API_KEY
+        process.env
+          .OPENAI_API_KEY
       ) {
         console.log(
-          "Using Gemini API..."
+          "Using ChatGPT API..."
         );
 
-        const model =
-          genAI.getGenerativeModel(
+        const completion =
+          await openai.chat.completions.create(
             {
-              model: "gemini-2.0-flash",
+              model:
+                "gpt-4.1-mini",
+
+              messages: [
+                {
+                  role:
+                    "system",
+
+                  content:
+                    "You are a mental wellness assistant for students preparing for NEET, JEE, UPSC, CAT, GATE, CUET, and Boards. Always return valid JSON only.",
+                },
+                {
+                  role:
+                    "user",
+
+                  content: `
+Student Details:
+
+Exam:
+${body.exam}
+
+Mood:
+${body.mood}
+
+Stress Level:
+${body.stress}/10
+
+Sleep Hours:
+${body.sleep}
+
+Study Hours:
+${body.studyHours}
+
+Stress Trigger:
+${body.trigger}
+
+Reflection:
+${body.reflection}
+
+Return ONLY valid JSON:
+
+{
+"tip":"",
+"motivation":"",
+"warning":""
+}
+`,
+                },
+              ],
+
+              temperature: 0.7,
+
+              response_format:
+                {
+                  type:
+                    "json_object",
+                },
             }
           );
 
-        const prompt = `
-You are a mental wellness assistant helping students during exams.
-
-Student Details:
-Exam: ${body.exam}
-Mood: ${body.mood}
-Stress Level: ${body.stress}/10
-Sleep Hours: ${body.sleep}
-Study Hours: ${body.studyHours}
-Stress Trigger: ${body.trigger}
-Reflection Journal: ${body.reflection}
-
-Analyze emotional state and provide personalized support.
-
-Return ONLY valid JSON in this format:
-
-{
-  "tip": "",
-  "motivation": "",
-  "warning": ""
-}
-`;
-
-        const result =
-          await model.generateContent(
-            prompt
-          );
-
-        let text =
-          result.response.text();
+        const text =
+          completion
+            .choices[0]
+            .message.content;
 
         console.log(
-          "RAW GEMINI:",
+          "RAW OPENAI:",
           text
         );
 
-        // CLEAN RESPONSE
-        text = text
-          .replace(
-            /```json/g,
-            ""
-          )
-          .replace(
-            /```/g,
-            ""
-          )
-          .trim();
-
-        const firstBrace =
-          text.indexOf("{");
-
-        const lastBrace =
-          text.lastIndexOf(
-            "}"
-          );
-
-        // INVALID JSON => FALLBACK
-        if (
-          firstBrace === -1 ||
-          lastBrace === -1
-        ) {
-          throw new Error(
-            "Invalid Gemini JSON"
-          );
-        }
-
-        const cleanJson =
-          text.slice(
-            firstBrace,
-            lastBrace + 1
-          );
-
         const parsed =
-          JSON.parse(
-            cleanJson
-          );
-console.log(parsed);
+          JSON.parse(text);
+
         return Response.json({
           ...parsed,
           mode: "ai",
@@ -208,7 +174,7 @@ console.log(parsed);
       }
     } catch (aiError) {
       console.error(
-        "AI ERROR:",
+        "OPENAI ERROR:",
         aiError.message
       );
 
@@ -217,7 +183,7 @@ console.log(parsed);
       );
     }
 
-    // FALLBACK MODE
+    // FALLBACK
     return Response.json(
       offlineSupport(body)
     );
@@ -230,8 +196,7 @@ console.log(parsed);
     return Response.json(
       {
         error:
-          err.message ||
-          "Internal Server Error",
+          err.message,
       },
       {
         status: 500,
