@@ -1,38 +1,64 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Brain, Moon, BookOpen, HeartPulse } from "lucide-react";
-import toast, { Toaster } from "react-hot-toast";
+import { useEffect, useState } from "react";
+import ProgressChart from "./components/ProgressChart";
+import toast, {
+  Toaster,
+} from "react-hot-toast";
 import { calculateWellnessScore } from "./utils/scoreEngine";
 import { detectBurnout } from "./utils/triggerEngine";
 
 export default function Home() {
-  const [loading, setLoading] = useState(false);
-  const [aiResult, setAiResult] = useState(null);
+  const [loading, setLoading] =
+    useState(false);
 
-  const [form, setForm] = useState({
-    exam: "",
-    mood: "",
-    stress: "",
-    sleep: "",
-    studyHours: "",
-    trigger: "",
-    reflection: "",
-  });
+  const [score, setScore] =
+    useState(0);
 
-  const [score, setScore] = useState(0);
-  const [burnout, setBurnout] = useState(null);
+  const [burnout, setBurnout] =
+    useState(null);
 
+  const [aiResult, setAiResult] =
+    useState(null);
+const [history, setHistory] =
+  useState([]);
+  const [errors, setErrors] =
+    useState({});
+
+  const [form, setForm] =
+    useState({
+      exam: "",
+      mood: "",
+      stress: "",
+      sleep: "",
+      studyHours: "",
+      trigger: "",
+      reflection: "",
+    });
+
+  // Load local storage
   useEffect(() => {
     const saved =
-      localStorage.getItem("mentalTracker");
+      localStorage.getItem(
+        "mentalTracker"
+      );
 
     if (saved) {
-      const parsed = JSON.parse(saved);
-      setForm(parsed);
+      setForm(JSON.parse(saved));
     }
   }, []);
 
+  useEffect(() => {
+  const savedHistory =
+    JSON.parse(
+      localStorage.getItem(
+        "wellnessHistory"
+      )
+    ) || [];
+
+  setHistory(savedHistory);
+}, []);
+  // Save local storage
   useEffect(() => {
     localStorage.setItem(
       "mentalTracker",
@@ -40,97 +66,199 @@ export default function Home() {
     );
   }, [form]);
 
+  const handleChange = (
+    e
+  ) => {
+    const { name, value } =
+      e.target;
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    // remove field error
+    setErrors((prev) => ({
+      ...prev,
+      [name]: "",
+    }));
+  };
+
   const validate = () => {
-    if (!form.exam)
-      return toast.error(
-        "Select exam type"
-      );
+    const newErrors = {};
 
-    if (!form.mood)
-      return toast.error(
-        "Select mood"
-      );
+    if (!form.exam.trim()) {
+      newErrors.exam =
+        "Exam type is required";
+    }
 
-    if (!form.stress)
-      return toast.error(
-        "Stress level required"
-      );
+    if (!form.mood.trim()) {
+      newErrors.mood =
+        "Mood is required";
+    }
 
-    if (!form.sleep)
-      return toast.error(
-        "Sleep hours required"
-      );
+    if (
+      !form.stress ||
+      Number(form.stress) <
+        1 ||
+      Number(form.stress) >
+        10
+    ) {
+      newErrors.stress =
+        "Stress level must be between 1–10";
+    }
 
-    if (!form.studyHours)
-      return toast.error(
-        "Study hours required"
+    if (
+      !form.sleep ||
+      Number(form.sleep) <
+        1 ||
+      Number(form.sleep) >
+        24
+    ) {
+      newErrors.sleep =
+        "Sleep hours must be between 1–24";
+    }
+
+    if (
+      !form.studyHours ||
+      Number(
+        form.studyHours
+      ) < 0 ||
+      Number(
+        form.studyHours
+      ) > 18
+    ) {
+      newErrors.studyHours =
+        "Study hours must be between 0–18";
+    }
+
+    if (
+      !form.trigger.trim()
+    ) {
+      newErrors.trigger =
+        "Stress trigger is required";
+    }
+
+    if (
+      !form.reflection.trim()
+    ) {
+      newErrors.reflection =
+        "Reflection journal is required";
+    }
+
+    setErrors(newErrors);
+
+    if (
+      Object.keys(
+        newErrors
+      ).length > 0
+    ) {
+      toast.error(
+        "Please fix form errors"
       );
+      return false;
+    }
 
     return true;
   };
 
-  const handleSubmit = async () => {
-    if (!validate()) return;
+  const handleSubmit =
+    async () => {
+      const isValid =
+        validate();
 
-    try {
-      setLoading(true);
+      // STOP API CALL
+      if (!isValid)
+        return;
 
-      const wellnessScore =
-        calculateWellnessScore({
-          mood: form.mood,
-          sleep: Number(form.sleep),
-          studyHours:
-            Number(form.studyHours),
-          stress:
-            Number(form.stress),
-        });
+      try {
+        setLoading(true);
 
-      setScore(wellnessScore);
+        // wellness score
+        const scoreResult =
+          calculateWellnessScore(
+            {
+              mood:
+                form.mood,
+              sleep:
+                Number(
+                  form.sleep
+                ),
+              studyHours:
+                Number(
+                  form.studyHours
+                ),
+              stress:
+                Number(
+                  form.stress
+                ),
+            }
+          );
 
-      const burnoutResult =
-        detectBurnout({
-          stress:
-            Number(form.stress),
-          sleep:
-            Number(form.sleep),
-          studyHours:
-            Number(
-              form.studyHours
-            ),
-        });
+        setScore(
+          scoreResult
+        );
 
-      setBurnout(burnoutResult);
+        // burnout
+        const burnoutData =
+          detectBurnout({
+            stress:
+              Number(
+                form.stress
+              ),
+            sleep:
+              Number(
+                form.sleep
+              ),
+            studyHours:
+              Number(
+                form.studyHours
+              ),
+          });
 
-      const res = await fetch(
-        "/api/wellness",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify(
-            form
-          ),
+        setBurnout(
+          burnoutData
+        );
+
+        const res =
+          await fetch(
+            "/api/wellness",
+            {
+              method:
+                "POST",
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+              body:
+                JSON.stringify(
+                  form
+                ),
+            }
+          );
+
+        if (!res.ok) {
+          throw new Error(
+            "Failed to generate report"
+          );
         }
-      );
 
-      const data =
-        await res.json();
-console.log(data);
-      setAiResult(data);
+        const data =
+          await res.json();
 
-      toast.success(
-        "Wellness report generated"
-      );
-    } catch (err) {
-      toast.error(
-        "Something went wrong"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+        setAiResult(data);
+
+        toast.success(
+          "Wellness report generated"
+        );
+      } catch (error) {
+        toast.error(
+          error.message
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
 
   return (
     <main className="min-h-screen bg-slate-100 p-6">
@@ -140,14 +268,14 @@ console.log(data);
 
         <div className="text-center mb-8">
           <h1 className="text-5xl font-bold">
-            🧠 Mental Wellness Tracker
+            🧠 Mental Wellness
+            Tracker
           </h1>
 
-          <p className="text-gray-600 mt-2">
-            Support for NEET,
-            JEE, UPSC, CAT,
-            CUET, Boards &
-            More
+          <p className="text-gray-500 mt-2">
+            Support during
+            exams and result
+            season
           </p>
         </div>
 
@@ -155,165 +283,275 @@ console.log(data);
 
           {/* FORM */}
 
-          <div className="bg-white rounded-3xl shadow-xl p-6">
+          <div className="bg-white rounded-3xl shadow-lg p-6">
 
-            <h2 className="text-2xl font-bold mb-5">
+            <h2 className="text-2xl font-bold mb-6">
               Daily Check-In
             </h2>
 
             <div className="space-y-4">
 
-              <select
-                className="w-full border rounded-xl p-4"
-                value={form.exam}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    exam:
-                      e.target.value,
-                  })
-                }
-              >
-                <option value="">
-                  Select Exam
-                </option>
+              {/* Exam */}
 
-                <option>
-                  NEET
-                </option>
-                <option>JEE</option>
-                <option>
-                  UPSC
-                </option>
-                <option>CAT</option>
-                <option>
-                  GATE
-                </option>
-                <option>
-                  CUET
-                </option>
-                <option>
-                  Boards
-                </option>
-              </select>
+              <div>
+                <select
+                  name="exam"
+                  value={
+                    form.exam
+                  }
+                  onChange={
+                    handleChange
+                  }
+                  className="w-full border rounded-xl p-4"
+                >
+                  <option value="">
+                    Select Exam
+                  </option>
 
-              <select
-                className="w-full border rounded-xl p-4"
-                value={form.mood}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    mood:
-                      e.target.value,
-                  })
-                }
-              >
-                <option value="">
-                  Select Mood
-                </option>
+                  <option>
+                    NEET
+                  </option>
+                  <option>
+                    JEE
+                  </option>
+                  <option>
+                    UPSC
+                  </option>
+                  <option>
+                    CAT
+                  </option>
+                  <option>
+                    GATE
+                  </option>
+                  <option>
+                    CUET
+                  </option>
+                  <option>
+                    Boards
+                  </option>
+                </select>
 
-                <option>
-                  Happy
-                </option>
-                <option>
-                  Okay
-                </option>
-                <option>
-                  Stressed
-                </option>
-                <option>
-                  Burnout
-                </option>
-                <option>
-                  Anxiety
-                </option>
-              </select>
+                {errors.exam && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {
+                      errors.exam
+                    }
+                  </p>
+                )}
+              </div>
 
-              <input
-                type="number"
-                placeholder="Stress Level (1-10)"
-                className="w-full border rounded-xl p-4"
-                value={
-                  form.stress
-                }
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    stress:
-                      e.target.value,
-                  })
-                }
-              />
+              {/* Mood */}
 
-              <input
-                type="number"
-                placeholder="Sleep Hours"
-                className="w-full border rounded-xl p-4"
-                value={
-                  form.sleep
-                }
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    sleep:
-                      e.target.value,
-                  })
-                }
-              />
+              <div>
+                <select
+                  name="mood"
+                  value={
+                    form.mood
+                  }
+                  onChange={
+                    handleChange
+                  }
+                  className="w-full border rounded-xl p-4"
+                >
+                  <option value="">
+                    Select Mood
+                  </option>
 
-              <input
-                type="number"
-                placeholder="Study Hours"
-                className="w-full border rounded-xl p-4"
-                value={
-                  form.studyHours
-                }
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    studyHours:
-                      e.target.value,
-                  })
-                }
-              />
+                  <option>
+                    Happy
+                  </option>
+                  <option>
+                    Okay
+                  </option>
+                  <option>
+                    Stressed
+                  </option>
+                  <option>
+                    Anxiety
+                  </option>
+                  <option>
+                    Burnout
+                  </option>
+                </select>
 
-              <input
-                type="text"
-                placeholder="Stress Trigger"
-                className="w-full border rounded-xl p-4"
-                value={
-                  form.trigger
-                }
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    trigger:
-                      e.target.value,
-                  })
-                }
-              />
+                {errors.mood && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {
+                      errors.mood
+                    }
+                  </p>
+                )}
+              </div>
 
-              <textarea
-                rows={4}
-                placeholder="Reflection Journal"
-                className="w-full border rounded-xl p-4"
-                value={
-                  form.reflection
-                }
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    reflection:
-                      e.target.value,
-                  })
-                }
-              />
+              {/* Stress */}
+
+              <div>
+                <input
+                  type="number"
+                  name="stress"
+                  placeholder="Stress Level (1-10)"
+                  value={
+                    form.stress
+                  }
+                  onChange={
+                    handleChange
+                  }
+                  className="w-full border rounded-xl p-4"
+                />
+
+                {errors.stress && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {
+                      errors.stress
+                    }
+                  </p>
+                )}
+              </div>
+
+              {/* Sleep */}
+
+              <div>
+                <input
+                  type="number"
+                  name="sleep"
+                  placeholder="Sleep Hours"
+                  value={
+                    form.sleep
+                  }
+                  onChange={
+                    handleChange
+                  }
+                  className="w-full border rounded-xl p-4"
+                />
+
+                {errors.sleep && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {
+                      errors.sleep
+                    }
+                  </p>
+                )}
+              </div>
+
+              {/* Study Hours */}
+
+              <div>
+                <input
+                  type="number"
+                  name="studyHours"
+                  placeholder="Study Hours"
+                  value={
+                    form.studyHours
+                  }
+                  onChange={
+                    handleChange
+                  }
+                  className="w-full border rounded-xl p-4"
+                />
+
+                {errors.studyHours && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {
+                      errors.studyHours
+                    }
+                  </p>
+                )}
+              </div>
+
+              {/* Trigger */}
+
+              <div>
+                <select
+                  name="trigger"
+                  value={
+                    form.trigger
+                  }
+                  onChange={
+                    handleChange
+                  }
+                  className="w-full border rounded-xl p-4"
+                >
+                  <option value="">
+                    Select Stress Trigger
+                  </option>
+
+                  <option>
+                    Exam Pressure
+                  </option>
+
+                  <option>
+                    Fear of Failure
+                  </option>
+
+                  <option>
+                    Low Mock Test Score
+                  </option>
+
+                  <option>
+                    Parents Pressure
+                  </option>
+
+                  <option>
+                    Result Anxiety
+                  </option>
+
+                  <option>
+                    Sleep Issues
+                  </option>
+
+                  <option>
+                    Time Management
+                  </option>
+
+                  <option>
+                    Self Doubt
+                  </option>
+                </select>
+
+                {errors.trigger && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {
+                      errors.trigger
+                    }
+                  </p>
+                )}
+              </div>
+
+              {/* Reflection */}
+
+              <div>
+                <textarea
+                  rows={4}
+                  name="reflection"
+                  placeholder="How are you feeling today?"
+                  value={
+                    form
+                      .reflection
+                  }
+                  onChange={
+                    handleChange
+                  }
+                  className="w-full border rounded-xl p-4"
+                />
+
+                {errors.reflection && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {
+                      errors
+                        .reflection
+                    }
+                  </p>
+                )}
+              </div>
 
               <button
                 onClick={
                   handleSubmit
                 }
-                className="w-full bg-black text-white rounded-xl p-4 font-bold"
+                disabled={
+                  loading
+                }
+                className="w-full bg-black text-white rounded-xl p-4 font-bold hover:opacity-90"
               >
                 {loading
                   ? "Generating..."
@@ -326,23 +564,23 @@ console.log(data);
 
           <div className="space-y-5">
 
-            <div className="bg-white rounded-3xl shadow-xl p-6">
+            <div className="bg-white rounded-3xl shadow-lg p-6">
               <h2 className="text-xl font-bold">
                 Wellness Score
               </h2>
 
-              <div className="text-5xl font-bold mt-3">
+              <h1 className="text-5xl font-bold mt-3">
                 {score}/100
-              </div>
+              </h1>
             </div>
 
             {burnout && (
-              <div className="bg-white rounded-3xl shadow-xl p-6">
+              <div className="bg-white rounded-3xl shadow-lg p-6">
                 <h2 className="font-bold text-xl">
                   Burnout Risk
                 </h2>
 
-                <p className="mt-2">
+                <p>
                   Risk:
                   <strong>
                     {" "}
@@ -361,10 +599,11 @@ console.log(data);
             )}
 
             {aiResult && (
-              <div className="bg-white rounded-3xl shadow-xl p-6">
+              <div className="bg-white rounded-3xl shadow-lg p-6">
 
                 <h2 className="text-2xl font-bold mb-4">
-                  Personalized Support
+                  Personalized
+                  Support
                 </h2>
 
                 <p className="mb-4">
@@ -388,6 +627,14 @@ console.log(data);
                     aiResult
                       .warning
                   }
+                </p>
+
+                <p className="text-sm text-gray-500 mt-4">
+                  Mode:
+                  {aiResult.mode ===
+                  "ai"
+                    ? " 🤖 AI Powered"
+                    : " ⚡ Smart Offline"}
                 </p>
               </div>
             )}
