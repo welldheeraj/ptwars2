@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,9 +7,9 @@ import MindfulnessOasis from "./components/MindfulnessOasis";
 import toast, { Toaster } from "react-hot-toast";
 import { calculateWellnessScore } from "./utils/scoreEngine";
 import { detectBurnout } from "./utils/triggerEngine";
-import { 
-  Brain, Heart, Sparkles, PlusCircle, LineChart, 
-  ShieldAlert, BookOpen, Clock, Activity, Calendar, 
+import {
+  Brain, Heart, Sparkles, PlusCircle, LineChart,
+  ShieldAlert, BookOpen, Clock, Activity, Calendar,
   FileText, Trash2, AlertCircle, RefreshCw, Moon
 } from "lucide-react";
 
@@ -227,7 +228,7 @@ export default function Home() {
       <Toaster position="top-center" />
 
       <div className="max-w-7xl mx-auto w-full flex-grow flex flex-col">
-        
+
         {/* Navbar Header */}
         <header className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 border-b border-white/5 pb-6">
           <div className="flex items-center gap-3">
@@ -246,31 +247,28 @@ export default function Home() {
           <nav className="flex bg-slate-900/60 p-1.5 rounded-2xl border border-white/5 shadow-inner">
             <button
               onClick={() => setActiveTab("checkin")}
-              className={`flex items-center gap-2 py-2.5 px-5 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
-                activeTab === "checkin"
+              className={`flex items-center gap-2 py-2.5 px-5 rounded-xl text-sm font-semibold transition-all cursor-pointer ${activeTab === "checkin"
                   ? "bg-indigo-600 text-white shadow-md"
                   : "text-slate-400 hover:text-slate-200"
-              }`}
+                }`}
             >
               <PlusCircle className="w-4 h-4" /> Check-In
             </button>
             <button
               onClick={() => setActiveTab("growth")}
-              className={`flex items-center gap-2 py-2.5 px-5 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
-                activeTab === "growth"
+              className={`flex items-center gap-2 py-2.5 px-5 rounded-xl text-sm font-semibold transition-all cursor-pointer ${activeTab === "growth"
                   ? "bg-indigo-600 text-white shadow-md"
                   : "text-slate-400 hover:text-slate-200"
-              }`}
+                }`}
             >
               <LineChart className="w-4 h-4" /> My Growth
             </button>
             <button
               onClick={() => setActiveTab("oasis")}
-              className={`flex items-center gap-2 py-2.5 px-5 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
-                activeTab === "oasis"
+              className={`flex items-center gap-2 py-2.5 px-5 rounded-xl text-sm font-semibold transition-all cursor-pointer ${activeTab === "oasis"
                   ? "bg-indigo-600 text-white shadow-md"
                   : "text-slate-400 hover:text-slate-200"
-              }`}
+                }`}
             >
               <Heart className="w-4 h-4" /> Mindfulness Oasis
             </button>
@@ -281,7 +279,7 @@ export default function Home() {
         <div className="flex-grow">
           {activeTab === "checkin" && (
             <div className="grid lg:grid-cols-12 gap-8 items-start">
-              
+
               {/* Daily Check-in Form */}
               <div className="lg:col-span-7 glass-panel rounded-3xl p-6 md:p-8 space-y-6">
                 <div>
@@ -292,7 +290,7 @@ export default function Home() {
                 </div>
 
                 <div className="space-y-5">
-                  
+
                   {/* Select Exam & Input study hours side-by-side */}
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
@@ -342,11 +340,10 @@ export default function Home() {
                             key={m.name}
                             type="button"
                             onClick={() => setMoodValue(m.name)}
-                            className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-center transition-all cursor-pointer ${
-                              isSelected
+                            className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-center transition-all cursor-pointer ${isSelected
                                 ? "bg-indigo-600/30 border-indigo-500 text-white scale-[1.03] shadow-md shadow-indigo-500/20"
                                 : "bg-slate-900/40 border-white/5 text-slate-400 hover:bg-slate-800/40 hover:text-slate-200"
-                            }`}
+                              }`}
                           >
                             <span className="text-3xl mb-1.5">{m.emoji}</span>
                             <span className="text-xs font-bold">{m.name}</span>
@@ -362,13 +359,12 @@ export default function Home() {
                     <div>
                       <div className="flex justify-between items-center mb-2">
                         <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">Stress Level (1-10)</label>
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                          Number(form.stress) >= 8 ? "bg-rose-500/20 text-rose-300" :
-                          Number(form.stress) >= 5 ? "bg-amber-500/20 text-amber-300" : "bg-emerald-500/20 text-emerald-300"
-                        }`}>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${Number(form.stress) >= 8 ? "bg-rose-500/20 text-rose-300" :
+                            Number(form.stress) >= 5 ? "bg-amber-500/20 text-amber-300" : "bg-emerald-500/20 text-emerald-300"
+                          }`}>
                           {form.stress} / 10 - {
                             Number(form.stress) >= 8 ? "Severe Stress" :
-                            Number(form.stress) >= 5 ? "Moderate Pressure" : "Calm Mind"
+                              Number(form.stress) >= 5 ? "Moderate Pressure" : "Calm Mind"
                           }
                         </span>
                       </div>
@@ -415,11 +411,10 @@ export default function Home() {
                             key={t}
                             type="button"
                             onClick={() => setTriggerValue(t)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
-                              isSelected
+                            className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${isSelected
                                 ? "bg-indigo-600/35 border-indigo-400 text-white"
                                 : "bg-slate-900/50 border-white/5 text-slate-400 hover:border-slate-700/60"
-                            }`}
+                              }`}
                           >
                             {t}
                           </button>
@@ -464,7 +459,7 @@ export default function Home() {
 
               {/* Assessment and AI Support Panels */}
               <div className="lg:col-span-5 space-y-6">
-                
+
                 {/* 1. Score & Burnout Assessment Panel */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="glass-panel rounded-3xl p-5 flex flex-col justify-between">
@@ -478,9 +473,8 @@ export default function Home() {
                   <div className="glass-panel rounded-3xl p-5 flex flex-col justify-between">
                     <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Burnout Risk</h3>
                     <div className="mt-4">
-                      <div className={`text-2xl font-black ${
-                        burnout?.risk === "High" ? "text-rose-400" : "text-emerald-400"
-                      }`}>
+                      <div className={`text-2xl font-black ${burnout?.risk === "High" ? "text-rose-400" : "text-emerald-400"
+                        }`}>
                         {burnout ? burnout.risk : "--"}
                       </div>
                       <p className="text-[10px] text-slate-400 mt-1.5 leading-snug">{burnout ? burnout.message : "Perform a check-in to run detection."}</p>
@@ -496,13 +490,12 @@ export default function Home() {
                         <Sparkles className="text-yellow-400 w-5 h-5" /> Personalized AI Support
                       </h2>
                       {aiResult && (
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                          aiResult.mode === "gemini" 
-                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" 
-                            : aiResult.mode === "openai" 
-                              ? "bg-sky-500/10 text-sky-400 border-sky-500/30" 
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${aiResult.mode === "gemini"
+                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                            : aiResult.mode === "openai"
+                              ? "bg-sky-500/10 text-sky-400 border-sky-500/30"
                               : "bg-slate-500/10 text-slate-400 border-slate-500/30"
-                        }`}>
+                          }`}>
                           {aiResult.mode === "gemini" ? "🤖 Gemini AI" : aiResult.mode === "openai" ? "🤖 OpenAI" : "⚡ Smart Offline"}
                         </span>
                       )}
@@ -510,7 +503,7 @@ export default function Home() {
 
                     {aiResult ? (
                       <div className="space-y-4">
-                        
+
                         {/* Tip */}
                         <div className="bg-slate-900/60 rounded-2xl p-4 border border-white/5">
                           <h4 className="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-1">Practical Stress Buster</h4>
@@ -561,7 +554,7 @@ export default function Home() {
 
           {activeTab === "growth" && (
             <div className="space-y-6">
-              
+
               {/* Dual Y-axis Progress chart */}
               <ProgressChart history={history} />
 
